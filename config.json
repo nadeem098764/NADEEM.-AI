@@ -1,140 +1,228 @@
-{
-  "Author": "SHAHADAT SAHU",
-  "version": "2.0.0",
-  "language": "en",
-  "DeveloperMode": false,
-  "autoCreateDB": true,
-  "autoClean": true,
-  "allowInbox": false,
-  "notiGroup": true,
-  "NOTIFICATION": true,
-  "EMAIL": "your email",
-  "PASSWORD": "your password",
-  "OTPKEY": "",
-  "BOTNAME": "NADEEM AI BOT",
-  "PREFIX": "/",
-  "reactUnsend": ["😡", "🤧", "😤", "😠"],
+/* NADEEM Messenger Chatbot Language: Node.js (JavaScript) Library: facebook-chat-api (unofficial) — for group-chat features (members added, group welcome, emojis)
 
-  "ADMINBOT": [
-    "61552637532706",
-    "61552637532706",
-    "61552637532706"
-  ],
-  "NDH": ["61552637532706"],
-  "adminOnly": false,
-  "ndhOnly": false,
-  "adminPaOnly": false,
+IMPORTANT:
 
-  "APPSTATEPATH": "appstate.json",
-  "DATABASE": {
-    "sqlite": { "storage": "data.sqlite" }
-  },
+This script uses a user-account based approach (facebook-chat-api) so it logs in with a Facebook account (email & password) or appstate. This is different from official Page Webhooks.
 
-  "commandDisabled": [],
-  "eventDisabled": [],
+Keep credentials private. For production prefer appstate file to avoid storing password.
 
-  "System": {
-    "autoRestart": true,
-    "restartInterval": 86400,
-    "errorLog": true,
-    "saveCrashLogs": true,
-    "maxMemoryLimit": "1024mb"
-  },
 
-  "Performance": {
-    "cacheMessages": true,
-    "optimizeEvents": true,
-    "lazyLoadModules": true,
-    "limitConcurrentRequests": 5,
-    "autoOptimizeOnError": true,
-    "clearCacheOnCrash": true
-  },
+Features implemented (as requested):
 
-  "AntiAbuse": {
-    "blockSpam": true,
-    "spamThreshold": 5,
-    "autoBanSpam": true,
-    "protectAdmin": true,
-    "protectBot": true,
-    "notifyAdminOnAbuse": true
-  },
+Bot name: NADEEM.AI.BOT (owner Name stored in config)
 
-  "FCAOption": {
-    "selfListen": false,
-    "listenEvents": true,
-    "listenTyping": false,
-    "updatePresence": false,
-    "forceLogin": false,
-    "autoMarkDelivery": false,
-    "autoMarkRead": false,
-    "autoReconnect": true,
-    "logRecordSize": 100,
-    "online": false,
-    "emitReady": false,
-    "userAgent": "Mozilla/5.0 (Linux; Android 16; SM-A356E Build/BP2A.250605.031.A3; wv) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
-  },
+Requires commands to start with / — otherwise ignored
 
-  "Modules": {
-    "daily": { "cooldownTime": 43200000, "rewardCoin": 1000000000 },
-    "work": { "cooldownTime": 1200000 },
-    "cave": { "cooldownTime": 2000000 },
-    "cavevip": { "cooldownTime": 1200000 },
-    "lixi": { "cooldownTime": 1100000 },
-    "anime": { "cooldownTime": 1200000 },
-    "fish": { "cooldownTime": 1000000 },
-    "job": { "cooldownTime": 5000 },
-    "diemdanh": { "cooldownTime": 3000000 },
-    "checktt": { "maxColumn": 300 },
-    "xidach": { "maxPlayers": 5, "normalWinBonus": 1, "superWinBonus": 2, "epicWinBonus": 4 },
-    "loto": { "maxPlayers": 10, "getDelay": 8 }
-  },
+Hourly time announcement to registered groups (configurable)
 
-  "MenuSettings": {
-    "help": { "autoUnsend": true, "delayUnsend": 120 },
-    "help2": { "autoUnsend": true, "delayUnsend": 300 },
-    "help3": { "autoUnsend": true, "delayUnsend": 300 },
-    "helpall": { "autoUnsend": true, "delayUnsend": 20 },
-    "menu": { "autoUnsend": true, "delayUnsend": 55 },
-    "rankup": { "autoUnsend": true, "unsendMessageAfter": 10 }
-  },
+Welcome message when new member is added to a group, shows their name and which member number they are in the group
 
-  "AdminNotify": {
-    "adminNoti": { "autoUnsend": true, "sendNoti": true, "timeToUnsend": 10 },
-    "adminUpdate": { "autoUnsend": true, "sendNoti": true, "timeToUnsend": 10 }
-  },
+Full emoji support (unicode emoji in messages)
 
-  "Surprise": { "log": true, "out": "", "kickAll": "", "delThread": "" },
+Admin UID (ADMIN_UID) and owner name stored in config
 
-  "APIKEYS": {
-    "TENOR": "73YIAOY3ACT1",
-    "INSTAGRAM": "81b0466275mshb5265735e50299cp1b01c5jsn3e7f93112fd3",
-    "WOLFRAM": "T8J8YV-H265UQ762K",
-    "SAUCENAO": "29be078b8f5239a1202742869f92c25955bdcab3",
-    "BITLY": "150ef1bc3af86500796d645c86f56766e4802566",
-    "SOUNDCLOUD": "M4TSyS6eV0AcMynXkA3qQASGcOFQTWub",
-    "OPEN_WEATHER": "c4ef85b93982d6627681b056e24bd438",
-    "TIKTOK": "mzkFree_XNPP4LYOG9H8VY83GHG",
-    "TIKVD": "mzkFree_X0IFR3FV0P97U4VL83F",
-    "RNAME": "mi451266190",
-    "SIM": "Priyansh_1234567890",
-    "GHEP": "nhatdepzaivl",
-    "FB_COVER": "tdunguwu",
-    "MKT": "tdunguwu",
-    "MOON": "tdunguwu",
-    "BANNER": "tdunguwu",
-    "CARDINFO": "tuandz",
-    "SHORTVD": "XSemUp2Zv5",
-    "IFB_KEY": "leanhtruong_w2hMntztR06Yc0L8QHGG",
-    "IFB_TOKEN": "6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
-    "NGANHANG": "DUBFREE",
-    "VOICE_ZALO": "r5lKNWX89OJEJMXlUEpGEzcjByjGb2F0",
-    "VOICE_FPT": "MhYPX3ksxwdqLC63LiAR4r47sOrkSdhj",
-    "YOUTUBE_MAIN": "AIzaSyBNqRSYmQ9D1WWIa186k8nSvo5mr2Rvk5M"
-  },
+A support link is included in the welcome/help header
 
-  "Security": {
-    "caesar": { "caeserPassword": "123456" },
-    "log": { "enable": true },
-    "god": { "enable": true }
+Simple AI-like replies for questions (uses a small local Q/A map; you can extend it or hook to an external AI API)
+
+Persisted list of registered groups for time announcements: groups.json
+
+
+USAGE EXAMPLES (see bottom for commands list):
+
+Send: /help -> Bot replies with list of commands
+
+Send: /time -> Bot replies current time
+
+Send: /register (in group) -> Bot registers this group to receive hourly time messages
+
+Send: /unregister (in group) -> Stop hourly messages for that group
+
+Any message not starting with / will be ignored
+
+
+SETUP & RUN
+
+1. npm init -y
+
+
+2. npm install facebook-chat-api moment fs-extra
+
+
+3. Save this file as nadeem_bot.js
+
+
+4. Set env or fill credentials in login() invocation (recommended: use appstate.json and load it)
+
+
+5. node nadeem_bot.js
+
+
+
+Note: facebook-chat-api may require additional setup (2FA, checkpoint) depending on the account.
+
+
+---
+
+CONFIG / CODE START
+
+*/
+
+const login = require('facebook-chat-api'); const fs = require('fs-extra'); const path = require('path'); const moment = require('moment');
+
+// ---------- CONFIG ---------- const CONFIG = { OWNER_NAME: 'NADEEM', BOT_NAME: 'NADEEM.AI.BOT', ADMIN_UID: '61552637532706', // user's provided admin UID SUPPORT_LINK: 'https://www.facebook.com/share/17QR65nbyH/', GROUPS_FILE: path.join(__dirname, 'groups.json'), // local Q/A fallback (extend or replace with real AI integration) QA: { 'who are you': 'আমি NADEEM.AI.BOT — আপনার মেসেঞ্জার সহকারী। /help লিখে কমান্ড দেখুন।', 'hello': 'হাই! কেমন আছেন? 😊', 'hi': 'হাই! 😊', } };
+
+// Ensure groups file exists if (!fs.existsSync(CONFIG.GROUPS_FILE)) { fs.writeJsonSync(CONFIG.GROUPS_FILE, { groups: [] }, { spaces: 2 }); }
+
+let groupsDb = fs.readJsonSync(CONFIG.GROUPS_FILE);
+
+// ---------- LOGIN ---------- // Two options: (A) provide email & password (not recommended), (B) use appState JSON saved earlier. // Replace the object below with {email: 'YOUR_EMAIL', password: 'YOUR_PASS'} or with {appState: require('./appstate.json')}
+
+const CREDENTIALS = { /* example: email: 'you@mail.com', password: 'yourpass' */ };
+
+login(CREDENTIALS, (err, api) => { if (err) return console.error('Login error:', err);
+
+api.setOptions({ listenEvents: true, selfListen: false }); console.log(${CONFIG.BOT_NAME} চালু হলো। Owner: ${CONFIG.OWNER_NAME});
+
+// Listen for messages and events api.listen((err, message) => { if (err) return console.error('Listen error:', err);
+
+// Some events (like members added) arrive as type 'event' and have logMessageType
+if (message.type === 'message') {
+  handleMessage(api, message);
+} else if (message.type === 'event') {
+  handleEvent(api, message);
+}
+
+});
+
+// Hourly announcement loop: send time to registered groups every hour on the hour startHourlyAnnouncements(api); });
+
+// ---------- HANDLERS ----------
+
+async function handleMessage(api, message) { try { if (!message.body) return; // ignore empty messages
+
+// Only respond to messages that begin with '/'
+const body = message.body.trim();
+if (!body.startsWith('/')) return;
+
+const args = body.slice(1).trim().split(/\s+/);
+const command = args.shift().toLowerCase();
+
+const threadID = message.threadID;
+const senderID = message.senderID;
+
+switch (command) {
+  case 'help':
+    await sendHelp(api, threadID);
+    break;
+
+  case 'time':
+    await sendTime(api, threadID);
+    break;
+
+  case 'register':
+    await registerGroup(api, threadID);
+    break;
+
+  case 'unregister':
+    await unregisterGroup(api, threadID);
+    break;
+
+  case 'owner':
+    await api.sendMessage(`Owner Name: ${CONFIG.OWNER_NAME}\nAdmin UID: ${CONFIG.ADMIN_UID}\nSupport: ${CONFIG.SUPPORT_LINK}`, threadID);
+    break;
+
+  case 'ask':
+    // Example: /ask how are you
+    const q = args.join(' ').toLowerCase();
+    await handleQA(api, threadID, q);
+    break;
+
+  default:
+    // Unknown command: try QA fallback
+    const unknown = command + (args.length ? ' ' + args.join(' ') : '');
+    await handleQA(api, threadID, unknown);
+    break;
+}
+
+} catch (e) { console.error('handleMessage error:', e); } }
+
+async function handleEvent(api, event) { // Example: log:subscribe (someone added) try { if (!event.logMessageType) return;
+
+if (event.logMessageType === 'log:subscribe') {
+  // event.logMessageData added participants
+  const added = event.logMessageData && event.logMessageData.addedParticipants;
+  if (added && added.length) {
+    const threadID = event.threadID;
+    const threadInfo = await getThreadInfoAsync(api, threadID);
+    const participants = threadInfo.participantIDs || [];
+    for (const p of added) {
+      const name = p.name || p.userFbId || JSON.stringify(p);
+      const memberNumber = participants.length; // approximate
+      const welcomeText = `Welcome ${name} 🎉\nআপনি এই গ্রুপের ${memberNumber} নম্বর সদস্য।\nগ্রুপে স্বাগতম!`;
+      api.sendMessage(welcomeText, threadID);
+    }
   }
 }
+
+} catch (e) { console.error('handleEvent error:', e); } }
+
+// ---------- COMMAND IMPLEMENTATIONS ----------
+
+async function sendHelp(api, threadID) { const helpText = 📘 *NADEEM.AI.BOT কমান্ড তালিকা*\n\n + /help - এই সাহায্য পেজ\n + /time - এখনকার সময় দেখাবে\n + /register - এই গ্রুপে এক ঘন্টায় একবার সময় পাঠাতে গ্রুপ রেজিস্টার করুন\n + /unregister - রেজিস্ট্রেশন বাতিল করুন\n + /owner - বট মালিকের তথ্য দেখাবে\n + /ask <প্রশ্ন> - বটকে প্রশ্ন করুন (সহজ কিউএ ফলোব্যাক)\n\n + 🛠 সমস্যা হলে: ${CONFIG.SUPPORT_LINK}\n + Admin UID: ${CONFIG.ADMIN_UID};
+
+await api.sendMessage(helpText, threadID); }
+
+async function sendTime(api, threadID) { const now = moment().format('YYYY-MM-DD HH:mm:ss'); await api.sendMessage(🕒 এখনকার সময়: ${now}, threadID); }
+
+async function registerGroup(api, threadID) { if (groupsDb.groups.includes(threadID)) { await api.sendMessage('এই গ্রুপটি ইতিমধ্যে রেজিস্টার করা আছে। ✅', threadID); return; } groupsDb.groups.push(threadID); fs.writeJsonSync(CONFIG.GROUPS_FILE, groupsDb, { spaces: 2 }); await api.sendMessage('গ্রুপটি রেজিস্টার করা হলো — এখন থেকে প্রতি ঘন্টায় সময় পাবেন। ⏰', threadID); }
+
+async function unregisterGroup(api, threadID) { if (!groupsDb.groups.includes(threadID)) { await api.sendMessage('এই গ্রুপটি রেজিস্টার করা ছিল না।', threadID); return; } groupsDb.groups = groupsDb.groups.filter(g => g !== threadID); fs.writeJsonSync(CONFIG.GROUPS_FILE, groupsDb, { spaces: 2 }); await api.sendMessage('গ্রুপটির রেজিস্ট্রেশন বাতিল করা হয়েছে।', threadID); }
+
+async function handleQA(api, threadID, q) { if (!q) { await api.sendMessage('আপনি কোন প্রশ্ন করছেন? /ask লিখে প্রশ্ন দিন।', threadID); return; } // simple matching const lower = q.toLowerCase(); for (const k of Object.keys(CONFIG.QA)) { if (lower.includes(k)) { await api.sendMessage(CONFIG.QA[k], threadID); return; } }
+
+// Default fallback await api.sendMessage('দুঃখিত, আমি সেটা বুঝতে পারিনি। /help লিখে কমান্ড দেখুন বা /ask দিয়ে প্রশ্ন করুন।', threadID); }
+
+// ---------- UTILITIES ----------
+
+function startHourlyAnnouncements(api) { // compute ms until next hour const now = new Date(); const msToNextHour = (60 - now.getMinutes()) * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
+
+// set timeout to align on the hour, then interval every hour setTimeout(() => { sendTimeToAll(api); setInterval(() => sendTimeToAll(api), 60 * 60 * 1000); }, msToNextHour); }
+
+async function sendTimeToAll(api) { groupsDb = fs.readJsonSync(CONFIG.GROUPS_FILE); if (!groupsDb.groups || !groupsDb.groups.length) return;
+
+const now = moment().format('YYYY-MM-DD HH:mm:ss'); for (const threadID of groupsDb.groups) { try { await api.sendMessage(⏰ ঘন্টাব্যাপী সময়: ${now}, threadID); } catch (e) { console.error('Failed to send time to', threadID, e); } } }
+
+function getThreadInfoAsync(api, threadID) { return new Promise((resolve, reject) => { api.getThreadInfo(threadID, (err, info) => { if (err) return reject(err); resolve(info); }); }); }
+
+/* COMMAND EXAMPLES (use these in any chat where the bot is present):
+
+1. /help
+
+
+2. /time
+
+
+3. /register  (in a group) -> adds to hourly announcement list
+
+
+4. /unregister
+
+
+5. /owner
+
+
+6. /ask how are you?
+
+
+
+NOTES & LIMITATIONS:
+
+The bot replies only when messages start with /. This is by design.
+
+For full AI replies, connect to an external AI API (OpenAI, etc.) inside handleQA.
+
+The facebook-chat-api is unofficial. Using it may trigger security checks. For a Page-based bot (official), build a Facebook App + Page Access Token + webhook – but group events and direct personal-group behaviors are limited there.
+
+
+*/
