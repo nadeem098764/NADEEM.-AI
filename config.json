@@ -1,228 +1,229 @@
-/* NADEEM Messenger Chatbot Language: Node.js (JavaScript) Library: facebook-chat-api (unofficial) — for group-chat features (members added, group welcome, emojis)
+// index.js
+// NADEEM.AI.BOT — Messenger slash-command bot (Node 18+, ES modules)
+import express from "express";
+import fetch from "node-fetch";
+import bodyParser from "body-parser";
+import fs from "fs";
+import path from "path";
 
-IMPORTANT:
+const app = express();
+app.use(bodyParser.json());
 
-This script uses a user-account based approach (facebook-chat-api) so it logs in with a Facebook account (email & password) or appstate. This is different from official Page Webhooks.
-
-Keep credentials private. For production prefer appstate file to avoid storing password.
-
-
-Features implemented (as requested):
-
-Bot name: NADEEM.AI.BOT (owner Name stored in config)
-
-Requires commands to start with / — otherwise ignored
-
-Hourly time announcement to registered groups (configurable)
-
-Welcome message when new member is added to a group, shows their name and which member number they are in the group
-
-Full emoji support (unicode emoji in messages)
-
-Admin UID (ADMIN_UID) and owner name stored in config
-
-A support link is included in the welcome/help header
-
-Simple AI-like replies for questions (uses a small local Q/A map; you can extend it or hook to an external AI API)
-
-Persisted list of registered groups for time announcements: groups.json
-
-
-USAGE EXAMPLES (see bottom for commands list):
-
-Send: /help -> Bot replies with list of commands
-
-Send: /time -> Bot replies current time
-
-Send: /register (in group) -> Bot registers this group to receive hourly time messages
-
-Send: /unregister (in group) -> Stop hourly messages for that group
-
-Any message not starting with / will be ignored
-
-
-SETUP & RUN
-
-1. npm init -y
-
-
-2. npm install facebook-chat-api moment fs-extra
-
-
-3. Save this file as nadeem_bot.js
-
-
-4. Set env or fill credentials in login() invocation (recommended: use appstate.json and load it)
-
-
-5. node nadeem_bot.js
-
-
-
-Note: facebook-chat-api may require additional setup (2FA, checkpoint) depending on the account.
-
-
----
-
-CONFIG / CODE START
-
+/*
+ Environment variables (set these before run):
+ - PAGE_ACCESS_TOKEN
+ - VERIFY_TOKEN
+ - ADMIN_UID  (61552637532706)
+ - OWNER_NAME (NADEEM)
+ - ERROR_REPORT_URL (https://www.facebook.com/share/1HcXedhhfb/)
+ - OPENAI_KEY (optional for /ai)
 */
 
-const login = require('facebook-chat-api'); const fs = require('fs-extra'); const path = require('path'); const moment = require('moment');
+const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "verify_token_here";
+const ADMIN_UID = process.env.ADMIN_UID || "61552637532706";
+const OWNER_NAME = process.env.OWNER_NAME || "NADEEM";
+const ERROR_REPORT_URL = process.env.ERROR_REPORT_URL || "https://www.facebook.com/share/1HcXedhhfb/";
+const OPENAI_KEY = process.env.OPENAI_KEY || "";
 
-// ---------- CONFIG ---------- const CONFIG = { OWNER_NAME: 'NADEEM', BOT_NAME: 'NADEEM.AI.BOT', ADMIN_UID: '61552637532706', // user's provided admin UID SUPPORT_LINK: 'https://www.facebook.com/share/17QR65nbyH/', GROUPS_FILE: path.join(__dirname, 'groups.json'), // local Q/A fallback (extend or replace with real AI integration) QA: { 'who are you': 'আমি NADEEM.AI.BOT — আপনার মেসেঞ্জার সহকারী। /help লিখে কমান্ড দেখুন।', 'hello': 'হাই! কেমন আছেন? 😊', 'hi': 'হাই! 😊', } };
-
-// Ensure groups file exists if (!fs.existsSync(CONFIG.GROUPS_FILE)) { fs.writeJsonSync(CONFIG.GROUPS_FILE, { groups: [] }, { spaces: 2 }); }
-
-let groupsDb = fs.readJsonSync(CONFIG.GROUPS_FILE);
-
-// ---------- LOGIN ---------- // Two options: (A) provide email & password (not recommended), (B) use appState JSON saved earlier. // Replace the object below with {email: 'YOUR_EMAIL', password: 'YOUR_PASS'} or with {appState: require('./appstate.json')}
-
-const CREDENTIALS = { /* example: email: 'you@mail.com', password: 'yourpass' */ };
-
-login(CREDENTIALS, (err, api) => { if (err) return console.error('Login error:', err);
-
-api.setOptions({ listenEvents: true, selfListen: false }); console.log(${CONFIG.BOT_NAME} চালু হলো। Owner: ${CONFIG.OWNER_NAME});
-
-// Listen for messages and events api.listen((err, message) => { if (err) return console.error('Listen error:', err);
-
-// Some events (like members added) arrive as type 'event' and have logMessageType
-if (message.type === 'message') {
-  handleMessage(api, message);
-} else if (message.type === 'event') {
-  handleEvent(api, message);
+if (!PAGE_ACCESS_TOKEN) {
+  console.error("ERROR: PAGE_ACCESS_TOKEN missing in env.");
+  process.exit(1);
 }
 
+// Simple file DB (for demo). Use real DB for production.
+const DB_FILE = path.join(process.cwd(), "bot_db.json");
+let DB = { members: {}, threads: {}, subscribers: {} };
+try {
+  if (fs.existsSync(DB_FILE)) DB = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+} catch (e) {
+  console.error("DB load err", e);
+}
+function saveDB(){ fs.writeFileSync(DB_FILE, JSON.stringify(DB, null,2)); }
+
+// Webhook verify (Facebook)
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+  if (mode && token && mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("Webhook verified.");
+    res.status(200).send(challenge);
+  } else res.status(403).send("Forbidden");
 });
 
-// Hourly announcement loop: send time to registered groups every hour on the hour startHourlyAnnouncements(api); });
+// Webhook receiver
+app.post("/webhook", async (req, res) => {
+  try {
+    const body = req.body;
+    if (body.object === "page") {
+      for (const entry of body.entry) {
+        if (!entry.messaging) continue;
+        for (const ev of entry.messaging) {
+          // event from user
+          const senderId = ev.sender?.id;
+          // ignore page echo or unknown
+          if (!senderId) continue;
 
-// ---------- HANDLERS ----------
+          // Handle messages
+          if (ev.message && !ev.message.is_echo) {
+            const text = (ev.message.text || "").trim();
+            // register member if new
+            if (!DB.members[senderId]) {
+              DB.members[senderId] = { id: senderId, firstSeen: new Date().toISOString() };
+              saveDB();
+              // send welcome to the user/thread
+              await sendText(senderId, `👋 Welcome! আপনি এখন NADEEM.AI.BOT-এ প্রথমবার ঢুকেছেন.`);
+              const idx = Object.keys(DB.members).length;
+              await sendText(senderId, `🎉 আপনি এখন আমাদের সিস্টেমের ${idx} নম্বর ব্যবহারকারী!`);
+            }
 
-async function handleMessage(api, message) { try { if (!message.body) return; // ignore empty messages
+            // Slash-only behavior: ignore messages that don't start with '/'
+            if (!text.startsWith("/")) {
+              // silently ignore (no reply), as requested
+              continue;
+            }
 
-// Only respond to messages that begin with '/'
-const body = message.body.trim();
-if (!body.startsWith('/')) return;
+            // parse command
+            const parts = text.split(" ");
+            const cmd = parts[0].slice(1).toLowerCase();
+            const args = parts.slice(1).join(" ").trim();
 
-const args = body.slice(1).trim().split(/\s+/);
-const command = args.shift().toLowerCase();
+            await handleCommand(cmd, args, senderId);
+          }
 
-const threadID = message.threadID;
-const senderID = message.senderID;
-
-switch (command) {
-  case 'help':
-    await sendHelp(api, threadID);
-    break;
-
-  case 'time':
-    await sendTime(api, threadID);
-    break;
-
-  case 'register':
-    await registerGroup(api, threadID);
-    break;
-
-  case 'unregister':
-    await unregisterGroup(api, threadID);
-    break;
-
-  case 'owner':
-    await api.sendMessage(`Owner Name: ${CONFIG.OWNER_NAME}\nAdmin UID: ${CONFIG.ADMIN_UID}\nSupport: ${CONFIG.SUPPORT_LINK}`, threadID);
-    break;
-
-  case 'ask':
-    // Example: /ask how are you
-    const q = args.join(' ').toLowerCase();
-    await handleQA(api, threadID, q);
-    break;
-
-  default:
-    // Unknown command: try QA fallback
-    const unknown = command + (args.length ? ' ' + args.join(' ') : '');
-    await handleQA(api, threadID, unknown);
-    break;
-}
-
-} catch (e) { console.error('handleMessage error:', e); } }
-
-async function handleEvent(api, event) { // Example: log:subscribe (someone added) try { if (!event.logMessageType) return;
-
-if (event.logMessageType === 'log:subscribe') {
-  // event.logMessageData added participants
-  const added = event.logMessageData && event.logMessageData.addedParticipants;
-  if (added && added.length) {
-    const threadID = event.threadID;
-    const threadInfo = await getThreadInfoAsync(api, threadID);
-    const participants = threadInfo.participantIDs || [];
-    for (const p of added) {
-      const name = p.name || p.userFbId || JSON.stringify(p);
-      const memberNumber = participants.length; // approximate
-      const welcomeText = `Welcome ${name} 🎉\nআপনি এই গ্রুপের ${memberNumber} নম্বর সদস্য।\nগ্রুপে স্বাগতম!`;
-      api.sendMessage(welcomeText, threadID);
+          // TODO: handle other event types (postback, joins) if needed
+        }
+      }
+      res.status(200).send("EVENT_RECEIVED");
+    } else {
+      res.status(404).send("Not a page event");
     }
+  } catch (err) {
+    console.error("Webhook error:", err);
+    // alert admin
+    try { await sendText(ADMIN_UID, `⚠️ Bot error: ${err.message}\nReport: ${ERROR_REPORT_URL}`); } catch(e){}
+    res.status(500).send("Server error");
+  }
+});
+
+// sendText helper
+async function sendText(id, text) {
+  const body = { recipient: { id }, message: { text } };
+  const url = `https://graph.facebook.com/v17.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
+  try {
+    const r = await fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (j.error) console.error("FB send error", j.error);
+    return j;
+  } catch (e) {
+    console.error("Send fetch err", e);
   }
 }
 
-} catch (e) { console.error('handleEvent error:', e); } }
+// command handler
+async function handleCommand(cmd, args, threadId) {
+  try {
+    switch (cmd) {
+      case "hi":
+      case "hello":
+        await sendText(threadId, `Hi! 👋 আমি NADEEM.AI.BOT — কিভাবে সাহায্য করতে পারি?`);
+        break;
+      case "time":
+        await sendText(threadId, `🕒 এখন সময়: ${new Date().toLocaleString()}`);
+        break;
+      case "date":
+        await sendText(threadId, `📅 আজ: ${new Date().toDateString()}`);
+        break;
+      case "owner":
+        await sendText(threadId, `👤 Owner: ${OWNER_NAME} (Admin UID: ${ADMIN_UID})`);
+        break;
+      case "help":
+        await sendText(threadId, helpText());
+        break;
+      case "joke":
+        await sendText(threadId, `😄 জোক: আমি বট তাই আমাকে কফি দিয়ে জাগাতে হয় না — শুধু 0/1 গার্লফ্রেন্ড লাগবে 😂`);
+        break;
+      case "emoji":
+        await sendText(threadId, "😀 😍 😂 🤖 👍 🎉 🙏");
+        break;
+      case "members":
+        await sendText(threadId, `👥 মোট রেজিস্টার্ড: ${Object.keys(DB.members).length}`);
+        break;
+      case "subscribe":
+        DB.subscribers[threadId] = true; saveDB();
+        await sendText(threadId, `✅ সাবস্ক্রাইব সম্পন্ন। প্রতি ১ ঘণ্টায় টাইম পাবেন।`);
+        break;
+      case "unsubscribe":
+        delete DB.subscribers[threadId]; saveDB();
+        await sendText(threadId, `❌ সাবস্ক্রাইব বাতিল হয়েছে।`);
+        break;
+      case "ai":
+        if (!args) {
+          await sendText(threadId, "ব্যবহার: `/ai আপনার প্রশ্ন`");
+        } else {
+          if (!OPENAI_KEY) {
+            await sendText(threadId, "⚠️ AI সক্রিয় করা হয়নি — admin OpenAI key সেট করুন।");
+          } else {
+            const ans = await askOpenAI(args);
+            await sendText(threadId, `🤖 AI উত্তর:\n${ans}`);
+          }
+        }
+        break;
+      default:
+        await sendText(threadId, `❓ অজানা কমান্ড: /${cmd}\n/help লিখে সব কমান্ড দেখুন।`);
+    }
+  } catch (e) {
+    console.error("handleCommand err", e);
+    await sendText(ADMIN_UID, `⚠️ Command handler error: ${e.message}\n${ERROR_REPORT_URL}`);
+  }
+}
 
-// ---------- COMMAND IMPLEMENTATIONS ----------
+function helpText(){
+  return `📚 NADEEM.AI.BOT — কমান্ডগুলো:
+/hi — হ্যালো বলবে
+/time — এখন সময় বলে
+/date — আজকের তারিখ
+/owner — বট মালিকের নাম
+/help — এই লিস্ট
+/joke — মজার জোক
+/emoji — ইমোজি দেখাবে
+/members — মোট ইউজার দেখাবে
+/subscribe — প্রতি ১ ঘন্টায় টাইম পেতে সাবস্ক্রাইব
+/unsubscribe — সাবস্ক্রাইব কেটে দাও
+/ai [প্রশ্ন] — AI উত্তর (OpenAI key থাকলে)`;
+}
 
-async function sendHelp(api, threadID) { const helpText = 📘 *NADEEM.AI.BOT কমান্ড তালিকা*\n\n + /help - এই সাহায্য পেজ\n + /time - এখনকার সময় দেখাবে\n + /register - এই গ্রুপে এক ঘন্টায় একবার সময় পাঠাতে গ্রুপ রেজিস্টার করুন\n + /unregister - রেজিস্ট্রেশন বাতিল করুন\n + /owner - বট মালিকের তথ্য দেখাবে\n + /ask <প্রশ্ন> - বটকে প্রশ্ন করুন (সহজ কিউএ ফলোব্যাক)\n\n + 🛠 সমস্যা হলে: ${CONFIG.SUPPORT_LINK}\n + Admin UID: ${CONFIG.ADMIN_UID};
+// OpenAI helper (chat completion)
+async function askOpenAI(prompt){
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type":"application/json", "Authorization": `Bearer ${OPENAI_KEY}`},
+      body: JSON.stringify({ model: "gpt-4o-mini", messages: [{role:"user", content: prompt}], max_tokens: 400})
+    });
+    const j = await res.json();
+    return j?.choices?.[0]?.message?.content?.trim() || "AI থেকে উত্তর পেতে সমস্যা হয়েছে।";
+  } catch (e) {
+    console.error("OpenAI err", e);
+    return "AI সার্ভারে সমস্যা হয়েছে।";
+  }
+}
 
-await api.sendMessage(helpText, threadID); }
+// Hourly broadcaster: send time to subscribers every hour
+setInterval(async () => {
+  try {
+    const now = new Date();
+    const msg = `🕒 এখন সময়: ${now.toLocaleString()}`;
+    const subs = Object.keys(DB.subscribers || {});
+    for (const tid of subs) {
+      await sendText(tid, msg);
+    }
+  } catch (e) {
+    console.error("Hourly broadcast error", e);
+    try { await sendText(ADMIN_UID, `⚠️ Hourly broadcast error: ${e.message}`); } catch {}
+  }
+}, 1000 * 60 * 60); // 1 hour
 
-async function sendTime(api, threadID) { const now = moment().format('YYYY-MM-DD HH:mm:ss'); await api.sendMessage(🕒 এখনকার সময়: ${now}, threadID); }
-
-async function registerGroup(api, threadID) { if (groupsDb.groups.includes(threadID)) { await api.sendMessage('এই গ্রুপটি ইতিমধ্যে রেজিস্টার করা আছে। ✅', threadID); return; } groupsDb.groups.push(threadID); fs.writeJsonSync(CONFIG.GROUPS_FILE, groupsDb, { spaces: 2 }); await api.sendMessage('গ্রুপটি রেজিস্টার করা হলো — এখন থেকে প্রতি ঘন্টায় সময় পাবেন। ⏰', threadID); }
-
-async function unregisterGroup(api, threadID) { if (!groupsDb.groups.includes(threadID)) { await api.sendMessage('এই গ্রুপটি রেজিস্টার করা ছিল না।', threadID); return; } groupsDb.groups = groupsDb.groups.filter(g => g !== threadID); fs.writeJsonSync(CONFIG.GROUPS_FILE, groupsDb, { spaces: 2 }); await api.sendMessage('গ্রুপটির রেজিস্ট্রেশন বাতিল করা হয়েছে।', threadID); }
-
-async function handleQA(api, threadID, q) { if (!q) { await api.sendMessage('আপনি কোন প্রশ্ন করছেন? /ask লিখে প্রশ্ন দিন।', threadID); return; } // simple matching const lower = q.toLowerCase(); for (const k of Object.keys(CONFIG.QA)) { if (lower.includes(k)) { await api.sendMessage(CONFIG.QA[k], threadID); return; } }
-
-// Default fallback await api.sendMessage('দুঃখিত, আমি সেটা বুঝতে পারিনি। /help লিখে কমান্ড দেখুন বা /ask দিয়ে প্রশ্ন করুন।', threadID); }
-
-// ---------- UTILITIES ----------
-
-function startHourlyAnnouncements(api) { // compute ms until next hour const now = new Date(); const msToNextHour = (60 - now.getMinutes()) * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
-
-// set timeout to align on the hour, then interval every hour setTimeout(() => { sendTimeToAll(api); setInterval(() => sendTimeToAll(api), 60 * 60 * 1000); }, msToNextHour); }
-
-async function sendTimeToAll(api) { groupsDb = fs.readJsonSync(CONFIG.GROUPS_FILE); if (!groupsDb.groups || !groupsDb.groups.length) return;
-
-const now = moment().format('YYYY-MM-DD HH:mm:ss'); for (const threadID of groupsDb.groups) { try { await api.sendMessage(⏰ ঘন্টাব্যাপী সময়: ${now}, threadID); } catch (e) { console.error('Failed to send time to', threadID, e); } } }
-
-function getThreadInfoAsync(api, threadID) { return new Promise((resolve, reject) => { api.getThreadInfo(threadID, (err, info) => { if (err) return reject(err); resolve(info); }); }); }
-
-/* COMMAND EXAMPLES (use these in any chat where the bot is present):
-
-1. /help
-
-
-2. /time
-
-
-3. /register  (in a group) -> adds to hourly announcement list
-
-
-4. /unregister
-
-
-5. /owner
-
-
-6. /ask how are you?
-
-
-
-NOTES & LIMITATIONS:
-
-The bot replies only when messages start with /. This is by design.
-
-For full AI replies, connect to an external AI API (OpenAI, etc.) inside handleQA.
-
-The facebook-chat-api is unofficial. Using it may trigger security checks. For a Page-based bot (official), build a Facebook App + Page Access Token + webhook – but group events and direct personal-group behaviors are limited there.
-
-
-*/
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`NADEEM.AI.BOT running on port ${PORT}`));
